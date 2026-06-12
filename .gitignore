@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vercel/
+.DS_Store
+*.log
+
+# Local QA artifacts
+desktop.png
+mobile.png
+.chrome-*/
+
+.vercel

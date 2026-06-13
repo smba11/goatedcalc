@@ -11,39 +11,35 @@ import { createSoundController } from '../utils/sound.js';
 const PRESS_COOLDOWN_MS = 360;
 
 const buttons = [
-  { label: 'C', value: 'C', row: 0, col: 0, kind: 'clear' },
-  { label: '÷', value: '/', row: 0, col: 1, kind: 'operator' },
-  { label: '×', value: '*', row: 0, col: 2, kind: 'operator' },
-  { label: '−', value: '-', row: 0, col: 3, kind: 'operator' },
-  { label: '7', value: '7', row: 1, col: 0, kind: 'number' },
-  { label: '8', value: '8', row: 1, col: 1, kind: 'number' },
-  { label: '9', value: '9', row: 1, col: 2, kind: 'number' },
-  { label: '+', value: '+', row: 1, col: 3, kind: 'operator', tall: true },
-  { label: '4', value: '4', row: 2, col: 0, kind: 'number' },
-  { label: '5', value: '5', row: 2, col: 1, kind: 'number' },
-  { label: '6', value: '6', row: 2, col: 2, kind: 'number' },
-  { label: '1', value: '1', row: 3, col: 0, kind: 'number' },
-  { label: '2', value: '2', row: 3, col: 1, kind: 'number' },
-  { label: '3', value: '3', row: 3, col: 2, kind: 'number' },
-  { label: '=', value: '=', row: 3, col: 3, kind: 'equals', tall: true },
-  { label: '0', value: '0', row: 4, col: 0, kind: 'number', span: 2 },
-  { label: '.', value: '.', row: 4, col: 2, kind: 'number' },
+  { id: 'clear', label: 'C', value: 'C', row: 0, col: 0, kind: 'clear' },
+  { id: 'divide', label: '÷', value: '/', row: 0, col: 1, kind: 'operator' },
+  { id: 'multiply', label: '×', value: '*', row: 0, col: 2, kind: 'operator' },
+  { id: 'subtract', label: '−', value: '-', row: 0, col: 3, kind: 'operator' },
+  { id: 'seven', label: '7', value: '7', row: 1, col: 0, kind: 'number' },
+  { id: 'eight', label: '8', value: '8', row: 1, col: 1, kind: 'number' },
+  { id: 'nine', label: '9', value: '9', row: 1, col: 2, kind: 'number' },
+  { id: 'add', label: '+', value: '+', row: 1, col: 3, kind: 'operator', tall: true },
+  { id: 'four', label: '4', value: '4', row: 2, col: 0, kind: 'number' },
+  { id: 'five', label: '5', value: '5', row: 2, col: 1, kind: 'number' },
+  { id: 'six', label: '6', value: '6', row: 2, col: 2, kind: 'number' },
+  { id: 'one', label: '1', value: '1', row: 3, col: 0, kind: 'number' },
+  { id: 'two', label: '2', value: '2', row: 3, col: 1, kind: 'number' },
+  { id: 'three', label: '3', value: '3', row: 3, col: 2, kind: 'number' },
+  { id: 'equals', label: '=', value: '=', row: 3, col: 3, kind: 'equals', tall: true },
+  { id: 'zero', label: '0', value: '0', row: 4, col: 0, kind: 'number', span: 2 },
+  { id: 'decimal', label: '.', value: '.', row: 4, col: 2, kind: 'number' },
 ];
 
-const buttonByPosition = new Map(buttons.flatMap((button) => {
-  const positions = [[`${button.row}:${button.col}`, button]];
-  if (button.span === 2) {
-    positions.push([`${button.row}:${button.col + 1}`, button]);
-  }
-  return positions;
-}));
+const buttonById = new Map(buttons.map((button) => [button.id, button]));
+const defaultTheme = themes.find((theme) => theme.id === 'rainforest') ?? themes[0];
 
 export default function CalculatorGame() {
   const [calculator, setCalculator] = useState(initialCalculatorState);
   const [selectedCharacterId, setSelectedCharacterId] = useState(characters[0].id);
-  const [selectedThemeId, setSelectedThemeId] = useState(themes[0].id);
+  const [selectedThemeId, setSelectedThemeId] = useState(defaultTheme.id);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [avatarPosition, setAvatarPosition] = useState({ row: 4, col: 0 });
+  const [avatarButtonId, setAvatarButtonId] = useState('zero');
   const [direction, setDirection] = useState('down');
   const [isWalking, setIsWalking] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
@@ -61,6 +57,9 @@ export default function CalculatorGame() {
     () => themes.find((theme) => theme.id === selectedThemeId) ?? themes[0],
     [selectedThemeId],
   );
+
+  const avatarButton = buttonById.get(avatarButtonId) ?? buttonById.get('zero');
+  const avatarPosition = getButtonCenter(avatarButton);
 
   useEffect(() => {
     soundRef.current.setEnabled(soundEnabled);
@@ -81,22 +80,16 @@ export default function CalculatorGame() {
     window.setTimeout(() => setPressedKey((current) => (current === key ? null : current)), 220);
   }, []);
 
-  const moveAvatarTo = useCallback((position, nextDirection) => {
-    const button = buttonByPosition.get(`${position.row}:${position.col}`);
-
-    if (!button) {
-      return;
-    }
-
+  const moveAvatarTo = useCallback((button, nextDirection) => {
     setDirection(nextDirection);
-    setAvatarPosition({ row: button.row, col: button.col });
+    setAvatarButtonId(button.id);
     setIsWalking(true);
     soundRef.current.footstep();
     window.setTimeout(() => setIsWalking(false), 190);
   }, []);
 
   const jumpOnCurrentButton = useCallback(() => {
-    const button = buttonByPosition.get(`${avatarPosition.row}:${avatarPosition.col}`);
+    const button = buttonById.get(avatarButtonId);
 
     if (!button) {
       return;
@@ -106,28 +99,25 @@ export default function CalculatorGame() {
     setIsJumping(true);
     window.setTimeout(() => setIsJumping(false), 280);
     window.setTimeout(() => pressButton(button, 'avatar'), 130);
-  }, [avatarPosition, pressButton]);
+  }, [avatarButtonId, pressButton]);
 
   const handleMove = useCallback((deltaRow, deltaCol, nextDirection) => {
     if (!hasStarted) {
       setHasStarted(true);
     }
 
-    const nextPosition = {
-      row: Math.max(0, Math.min(4, avatarPosition.row + deltaRow)),
-      col: Math.max(0, Math.min(3, avatarPosition.col + deltaCol)),
-    };
+    const nextButton = getNextButton(avatarButton, deltaRow, deltaCol);
 
-    if (!buttonByPosition.has(`${nextPosition.row}:${nextPosition.col}`)) {
+    if (!nextButton) {
       return;
     }
 
-    moveAvatarTo(nextPosition, nextDirection);
-  }, [avatarPosition, hasStarted, moveAvatarTo]);
+    moveAvatarTo(nextButton, nextDirection);
+  }, [avatarButton, hasStarted, moveAvatarTo]);
 
   const handleDirectPress = useCallback((button) => {
     setHasStarted(true);
-    setAvatarPosition({ row: button.row, col: button.col });
+    setAvatarButtonId(button.id);
     setDirection('down');
     setIsJumping(true);
     window.setTimeout(() => setIsJumping(false), 280);
@@ -175,24 +165,21 @@ export default function CalculatorGame() {
         selectedThemeId={selectedThemeId}
         onSelect={setSelectedCharacterId}
         onThemeSelect={setSelectedThemeId}
+        isOpen={settingsOpen}
+        onToggle={() => setSettingsOpen((current) => !current)}
+        soundEnabled={soundEnabled}
+        onSoundChange={setSoundEnabled}
         hasStarted={hasStarted}
         onStart={() => {
           setCalculator(initialCalculatorState());
-          setAvatarPosition({ row: 4, col: 0 });
+          setAvatarButtonId('zero');
           setDirection('down');
           setHasStarted(true);
+          setSettingsOpen(false);
         }}
       />
 
       <section className="calculator-stage" aria-label="GoatedCalc calculator game">
-        <label className="sound-toggle">
-          <input
-            type="checkbox"
-            checked={soundEnabled}
-            onChange={(event) => setSoundEnabled(event.target.checked)}
-          />
-          <span>Sound</span>
-        </label>
         <div className="calculator-body">
           <CalculatorDisplay value={calculator.display} expressionHint={expressionHint} />
           <div className="button-field">
@@ -203,7 +190,7 @@ export default function CalculatorGame() {
                   <CalculatorButton
                     key={key}
                     button={button}
-                    isAvatarHere={button.row === avatarPosition.row && button.col === avatarPosition.col}
+                    isAvatarHere={button.id === avatarButton.id}
                     isPressed={pressedKey === key}
                     onPress={() => handleDirectPress(button)}
                     onPointerEnter={() => {}}
@@ -249,6 +236,63 @@ function ThemeDecor({ themeId }) {
       )}
     </div>
   );
+}
+
+function getButtonCenter(button) {
+  return {
+    col: button.col + ((button.span ?? 1) - 1) / 2,
+    row: button.row + (button.tall ? 0.5 : 0),
+  };
+}
+
+function getButtonBounds(button) {
+  return {
+    left: button.col,
+    right: button.col + (button.span ?? 1) - 1,
+    top: button.row,
+    bottom: button.row + (button.tall ? 1 : 0),
+  };
+}
+
+function rangesOverlap(firstStart, firstEnd, secondStart, secondEnd) {
+  return Math.max(firstStart, secondStart) <= Math.min(firstEnd, secondEnd);
+}
+
+function getNextButton(currentButton, deltaRow, deltaCol) {
+  const currentBounds = getButtonBounds(currentButton);
+  const currentCenter = getButtonCenter(currentButton);
+  const candidates = buttons.filter((button) => {
+    if (button.id === currentButton.id) {
+      return false;
+    }
+
+    const bounds = getButtonBounds(button);
+
+    if (deltaRow < 0) {
+      return bounds.bottom < currentBounds.top && rangesOverlap(bounds.left, bounds.right, currentBounds.left, currentBounds.right);
+    }
+    if (deltaRow > 0) {
+      return bounds.top > currentBounds.bottom && rangesOverlap(bounds.left, bounds.right, currentBounds.left, currentBounds.right);
+    }
+    if (deltaCol < 0) {
+      return bounds.right < currentBounds.left && rangesOverlap(bounds.top, bounds.bottom, currentBounds.top, currentBounds.bottom);
+    }
+    if (deltaCol > 0) {
+      return bounds.left > currentBounds.right && rangesOverlap(bounds.top, bounds.bottom, currentBounds.top, currentBounds.bottom);
+    }
+
+    return false;
+  });
+
+  return candidates
+    .map((button) => {
+      const center = getButtonCenter(button);
+      return {
+        button,
+        distance: Math.abs(center.row - currentCenter.row) + Math.abs(center.col - currentCenter.col),
+      };
+    })
+    .sort((first, second) => first.distance - second.distance)[0]?.button ?? null;
 }
 
 function normalizeKeyboardInput(key) {

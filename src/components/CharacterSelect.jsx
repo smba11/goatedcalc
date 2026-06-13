@@ -1,8 +1,16 @@
 import { characters } from '../data/characters.js';
+import { themes } from '../data/themes.js';
 
-export default function CharacterSelect({ selectedId, onSelect, onStart, hasStarted }) {
+export default function CharacterSelect({
+  selectedId,
+  selectedThemeId,
+  onSelect,
+  onThemeSelect,
+  onStart,
+  hasStarted,
+}) {
   return (
-    <aside className="character-select" aria-label="Character select">
+    <aside className="settings-panel" aria-label="Game settings">
       <div>
         <h1>GoatedCalc</h1>
         <p>Choose your buddy</p>
@@ -30,6 +38,26 @@ export default function CharacterSelect({ selectedId, onSelect, onStart, hasStar
             <span>{character.name}</span>
           </button>
         ))}
+      </div>
+      <div className="theme-settings">
+        <p>Aesthetic</p>
+        <div className="theme-options">
+          {themes.map((theme) => (
+            <button
+              className={theme.id === selectedThemeId ? 'theme-card selected' : 'theme-card'}
+              key={theme.id}
+              type="button"
+              onClick={() => onThemeSelect(theme.id)}
+              aria-pressed={theme.id === selectedThemeId}
+            >
+              <span className={`theme-swatch swatch-${theme.id}`} aria-hidden="true" />
+              <span>
+                <strong>{theme.name}</strong>
+                <small>{theme.description}</small>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
       <button className="start-button" type="button" onClick={onStart}>
         {hasStarted ? 'Restart' : 'Start'}

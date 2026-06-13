@@ -4,6 +4,7 @@ import CalculatorButton from './CalculatorButton.jsx';
 import CalculatorDisplay from './CalculatorDisplay.jsx';
 import CharacterSelect from './CharacterSelect.jsx';
 import { characters } from '../data/characters.js';
+import { themes } from '../data/themes.js';
 import { calculateNextState, initialCalculatorState } from '../utils/calculator.js';
 import { createSoundController } from '../utils/sound.js';
 
@@ -40,6 +41,7 @@ const buttonByPosition = new Map(buttons.flatMap((button) => {
 export default function CalculatorGame() {
   const [calculator, setCalculator] = useState(initialCalculatorState);
   const [selectedCharacterId, setSelectedCharacterId] = useState(characters[0].id);
+  const [selectedThemeId, setSelectedThemeId] = useState(themes[0].id);
   const [hasStarted, setHasStarted] = useState(false);
   const [avatarPosition, setAvatarPosition] = useState({ row: 4, col: 0 });
   const [direction, setDirection] = useState('down');
@@ -53,6 +55,11 @@ export default function CalculatorGame() {
   const selectedCharacter = useMemo(
     () => characters.find((character) => character.id === selectedCharacterId) ?? characters[0],
     [selectedCharacterId],
+  );
+
+  const selectedTheme = useMemo(
+    () => themes.find((theme) => theme.id === selectedThemeId) ?? themes[0],
+    [selectedThemeId],
   );
 
   useEffect(() => {
@@ -160,11 +167,14 @@ export default function CalculatorGame() {
   const expressionHint = calculator.operator ? `Ready for ${calculator.operator}` : 'Move, then Space/Enter';
 
   return (
-    <main className="game-shell">
+    <main className={`game-shell theme-${selectedTheme.id}`}>
       <div className="ambient-light" aria-hidden="true" />
+      <ThemeDecor themeId={selectedTheme.id} />
       <CharacterSelect
         selectedId={selectedCharacterId}
+        selectedThemeId={selectedThemeId}
         onSelect={setSelectedCharacterId}
+        onThemeSelect={setSelectedThemeId}
         hasStarted={hasStarted}
         onStart={() => {
           setCalculator(initialCalculatorState());
@@ -213,6 +223,31 @@ export default function CalculatorGame() {
         </div>
       </section>
     </main>
+  );
+}
+
+function ThemeDecor({ themeId }) {
+  return (
+    <div className={`scene-decor scene-${themeId}`} aria-hidden="true">
+      <span className="decor decor-1" />
+      <span className="decor decor-2" />
+      <span className="decor decor-3" />
+      <span className="decor decor-4" />
+      {themeId === 'rainforest' && (
+        <span className="rain-layer">
+          {Array.from({ length: 18 }, (_, index) => (
+            <i key={index} style={{ '--drop-index': index }} />
+          ))}
+        </span>
+      )}
+      {themeId === 'starlight' && (
+        <span className="star-layer">
+          {Array.from({ length: 14 }, (_, index) => (
+            <i key={index} style={{ '--star-index': index }} />
+          ))}
+        </span>
+      )}
+    </div>
   );
 }
 

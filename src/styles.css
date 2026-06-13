@@ -301,12 +301,18 @@ button {
 }
 
 .calculator-button.is-pressed,
-.calculator-button.avatar-here {
+.calculator-button.is-pressed {
   transform: translateY(7px) scale(0.965);
   box-shadow:
     inset 0 -2px 0 rgba(119, 74, 48, 0.08),
     0 3px 0 #c99461,
     0 7px 11px rgba(92, 58, 39, 0.13);
+}
+
+.calculator-button.avatar-here:not(.is-pressed) {
+  outline: 3px solid rgba(255, 255, 255, 0.74);
+  outline-offset: 3px;
+  filter: brightness(1.025);
 }
 
 .button-operator {
@@ -385,6 +391,10 @@ button {
 
 .avatar.is-walking .avatar-sprite {
   animation: avatar-walk 190ms steps(2) infinite;
+}
+
+.avatar.is-jumping .avatar-sprite {
+  animation: avatar-jump 280ms cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
 .ear {
@@ -506,6 +516,18 @@ button {
   }
   to {
     translate: 0 -5px;
+  }
+}
+
+@keyframes avatar-jump {
+  0% {
+    translate: 0 0;
+  }
+  42% {
+    translate: 0 -22px;
+  }
+  100% {
+    translate: 0 0;
   }
 }
 

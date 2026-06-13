@@ -1,4 +1,4 @@
-export default function Avatar({ character, position, direction, isWalking, isPressing }) {
+export default function Avatar({ character, position, direction, isWalking, isJumping, isPressing }) {
   const style = {
     '--avatar-x': position.col,
     '--avatar-y': position.row,
@@ -14,6 +14,7 @@ export default function Avatar({ character, position, direction, isWalking, isPr
         'avatar',
         `facing-${direction}`,
         isWalking ? 'is-walking' : '',
+        isJumping ? 'is-jumping' : '',
         isPressing ? 'is-pressing' : '',
       ]
         .filter(Boolean)

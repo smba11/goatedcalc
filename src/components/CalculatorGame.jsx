@@ -44,6 +44,7 @@ export default function CalculatorGame() {
   const [avatarPosition, setAvatarPosition] = useState({ row: 4, col: 0 });
   const [direction, setDirection] = useState('down');
   const [isWalking, setIsWalking] = useState(false);
+  const [isJumping, setIsJumping] = useState(false);
   const [pressedKey, setPressedKey] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const cooldownRef = useRef({ key: null, until: 0 });
@@ -73,7 +74,7 @@ export default function CalculatorGame() {
     window.setTimeout(() => setPressedKey((current) => (current === key ? null : current)), 220);
   }, []);
 
-  const moveAvatarTo = useCallback((position, nextDirection, shouldPress = true) => {
+  const moveAvatarTo = useCallback((position, nextDirection) => {
     const button = buttonByPosition.get(`${position.row}:${position.col}`);
 
     if (!button) {
@@ -85,11 +86,20 @@ export default function CalculatorGame() {
     setIsWalking(true);
     soundRef.current.footstep();
     window.setTimeout(() => setIsWalking(false), 190);
+  }, []);
 
-    if (shouldPress) {
-      window.setTimeout(() => pressButton(button, 'avatar'), 120);
+  const jumpOnCurrentButton = useCallback(() => {
+    const button = buttonByPosition.get(`${avatarPosition.row}:${avatarPosition.col}`);
+
+    if (!button) {
+      return;
     }
-  }, [pressButton]);
+
+    setHasStarted(true);
+    setIsJumping(true);
+    window.setTimeout(() => setIsJumping(false), 280);
+    window.setTimeout(() => pressButton(button, 'avatar'), 130);
+  }, [avatarPosition, pressButton]);
 
   const handleMove = useCallback((deltaRow, deltaCol, nextDirection) => {
     if (!hasStarted) {
@@ -112,8 +122,8 @@ export default function CalculatorGame() {
     setHasStarted(true);
     setAvatarPosition({ row: button.row, col: button.col });
     setDirection('down');
-    setIsWalking(true);
-    window.setTimeout(() => setIsWalking(false), 190);
+    setIsJumping(true);
+    window.setTimeout(() => setIsJumping(false), 280);
     pressButton(button, 'click');
   }, [pressButton]);
 
@@ -125,7 +135,7 @@ export default function CalculatorGame() {
         event.preventDefault();
       }
 
-      const keyboardInput = normalizeKeyboardInput(event.key);
+      const keyboardInput = key === 'enter' ? null : normalizeKeyboardInput(event.key);
       const keyboardButton = buttons.find((candidate) => candidate.value === keyboardInput);
 
       if (keyboardButton && key !== ' ') {
@@ -139,18 +149,15 @@ export default function CalculatorGame() {
       } else if (key === 'arrowright' || key === 'd') {
         handleMove(0, 1, 'right');
       } else if (key === 'enter' || key === ' ') {
-        const button = buttonByPosition.get(`${avatarPosition.row}:${avatarPosition.col}`);
-        if (button) {
-          pressButton(button, 'manual');
-        }
+        jumpOnCurrentButton();
       }
     }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [avatarPosition, handleDirectPress, handleMove, pressButton]);
+  }, [handleDirectPress, handleMove, jumpOnCurrentButton]);
 
-  const expressionHint = calculator.operator ? `Ready for ${calculator.operator}` : 'Arrow keys or WASD';
+  const expressionHint = calculator.operator ? `Ready for ${calculator.operator}` : 'Move, then Space/Enter';
 
   return (
     <main className="game-shell">
@@ -199,6 +206,7 @@ export default function CalculatorGame() {
               position={avatarPosition}
               direction={direction}
               isWalking={isWalking}
+              isJumping={isJumping}
               isPressing={Boolean(pressedKey)}
             />
           </div>
